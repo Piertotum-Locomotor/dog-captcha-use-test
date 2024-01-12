@@ -1,4 +1,4 @@
-import DogCaptchaDialog from "./conponents/DogCaptchaDialog";
+import DogCaptchaDialog from "./components/DogCaptchaDialog";
 
 export default function App() {
     return (
