@@ -133,8 +133,10 @@ export default function DogCaptchaDialog() {
       <br />
       
       
+      {/* Main Content */}
+      {passFlag === 1 && <div>秘密のコンテンツ<br />CAPCTHAに正解すると見えます</div>}
       
-
+      
       {/* Dialog */}
       <Dialog
         open={open}
