@@ -134,7 +134,10 @@ export default function DogCaptchaDialog() {
       
       
       {/* Main Content */}
-      {passFlag === 1 && <div style={{textAlign: "center"}}>秘密のコンテンツ<br />CAPCTHAに正解すると見えます</div>}
+      <Button disabled={pasFlag !== 1} color="primary" size="large" variant="contained" onClick={alert("ダミーだよ")}>送信(ダミー)</Button>
+      {passFlag === 1 &&
+        <div style={{textAlign: "center"}}>秘密のコンテンツ<br />CAPCTHAに正解すると見えます</div>
+      }
       
       
       {/* Dialog */}
