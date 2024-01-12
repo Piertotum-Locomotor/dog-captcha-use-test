@@ -204,7 +204,7 @@ export default function DogCaptchaDialog() {
           </> }
 
           {/*{passFlag === 1 && <div>わんわんCAPTCHAに正解しました。うれしーーーー<br />再挑戦するには再試行ボタンを押してください</div>}*/}
-          {passFlag === 1 && {handleClose}}
+          {passFlag === 1 && <div>わんわんCAPTCHAに正解しました。うれしーーーー<br />再挑戦するには再試行ボタンを押してください</div>}
 
         </DialogContent>
         <DialogActions>
