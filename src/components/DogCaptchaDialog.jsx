@@ -7,13 +7,14 @@ import DialogContent from '@mui/material/DialogContent';
 import Box from '@mui/material/Box';
 import { ImageList,ImageListItem } from '@mui/material';
 import { useEffect,useState } from "react";
-import Radio from '@mui/material/Radio'
-import RadioGroup from '@mui/material/RadioGroup'
+import Checkbox from '@mui/material/Checkbox';
 
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import RotateRightIcon from '@mui/icons-material/RotateRight';
 import RefreshIcon from '@mui/icons-material/Refresh';
+
+import Content from './Content';
 
 const APIURL = "https://roaring-pegasus-3652c3.netlify.app";
 
@@ -24,13 +25,10 @@ export default function DogCaptchaDialog() {
     setOpen(true);
   };
  
-  const handleClose = () => {
+  const handleClose = (forceNotToReload) => {
     setOpen(false);
-    if (passFlag !== 1) handleReload();
+    if (passFlag !== 1 && !forceNotToReload) handleReload();
   };
-
-  {/* For radio button */}
-  const [selectedImageId, setSelectedImageId] = React.useState([]);
 
   const [dataArr, setDataArr] = useState([]);
 
@@ -38,13 +36,14 @@ export default function DogCaptchaDialog() {
   const [quiz, setQuiz] = useState("");
   const [quizJa, setQuizJa] = useState("");
   const [message, setMessage] = useState([]);
-  const [ans, setAns] = useState("");
+  const [ans, setAns] = useState([]);
   const [APIBusy, setAPIBusy] = useState(false);
   const [passFlag, setPassFlag] = useState(-1); //0: Failed, 1: Passed, -1: Initialized
   useEffect (() => {
     fetchDogCaptchaAPI();
   },[]);
 
+  {/* POST */}
   //Fetch to DogCAPTCHA API
   async function fetchDogCaptchaAPI() {
     setId("0");
@@ -53,20 +52,33 @@ export default function DogCaptchaDialog() {
     setMessage([]);
     setAPIBusy(true);
     setPassFlag(-1);
-    setSelectedImageId(-1);
-    const response = await fetch(APIURL + "/.netlify/functions/DogCaptcha");
-    const data = await response.json().then(setAPIBusy(false));
-    setId(data.id);
-    setQuiz(data.quiz);
-    setQuizJa(data.quiz_ja);
-    setMessage(data.message);
+    setAns([]);
+
+    await fetch(APIURL + "/.netlify/functions/DogCaptcha", {
+      method: 'POST',
+      body: JSON.stringify({KEY: "VALUE"}),
+      headers: { 'Content-Type': 'application/json' },
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`${response.status} ${response.statusText}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      setAPIBusy(false);
+      setId(data.id);
+      setQuiz(data.quiz);
+      setQuizJa(data.quiz_ja);
+      setMessage(data.message);
+      return data;
+    })
+    .catch((error) => console.error('Error:', error));
   }
 
   useEffect (() => {
     setDataArr(message.map((message_list) => ({ message_list })));{/* dataListを配列にする */}
   },[message, setMessage]);
-
-
 
   const handleReload = async () => {
     if (!APIBusy) {
@@ -78,7 +90,7 @@ export default function DogCaptchaDialog() {
   {/* POST */}
   const handleSubmit = () => {
     if (!APIBusy) {
-      if (passFlag === 1) {handleClose(); return;}
+      if (passFlag === 1) {handleClose(false); return;}
       setPassFlag(-1);
       setAPIBusy(true);
       const data = { id: id, quiz: quiz, ans: ans };
@@ -94,7 +106,13 @@ export default function DogCaptchaDialog() {
         }
         return response.json();
         })
-      .then(data => {console.log(data); setPassFlag(data.passFlag);})
+      .then(data => {
+        console.log(data);
+        setPassFlag(data.passFlag);
+        if (data.passFlag === 1) {
+          handleClose(true);  //passFlagが1に更新されていないので、再読み込み禁止
+        }
+      })
       .catch((error) => console.error('Error:', error));
     }
   }
@@ -132,18 +150,17 @@ export default function DogCaptchaDialog() {
       </div>
       <br />
       
-      
       {/* Main Content */}
       <Button style={{textAlign: "center"}} disabled={passFlag !== 1} color="primary" size="large" variant="contained" onClick={() => alert("ダミーだよ")}>送信(ダミー)</Button>
-      {passFlag === 1 &&
-        <div>秘密のコンテンツ<br />CAPCTHAに正解すると見えます</div>
-      }
+      {passFlag === 1 && <>
+        <Content />
+      </>}
       
-      
+
       {/* Dialog */}
       <Dialog
         open={open}
-        onClose={handleClose}
+        onClose={() => handleClose(false)}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >  
@@ -162,18 +179,10 @@ export default function DogCaptchaDialog() {
             </p>
           </Box>
             
-          <RadioGroup
-            value={selectedImageId}
-            onChange={(event) => {
-              setSelectedImageId(event.target.value);
-              setAns(event.target.value);
-            }}
-            sx={{height: 1}}
-          >
             {/* Standard image list */}
             <ImageList sx={{ width: 500, height: 450 }} cols={3} rowHeight={164}>
               {dataArr.map((jsondata, i) => (
-                <Radio
+                <Checkbox
                 key={i}
                 value={i}
                 icon={
@@ -192,18 +201,26 @@ export default function DogCaptchaDialog() {
                     />
                   </ImageListItem>
                 }
+                onChange={(event) => {
+                  if (ans.includes(event.target.value)) {
+                    setAns(
+                      ans.filter((ans) => ans !== event.target.value)
+                    );
+                  } else {
+                    setAns([...ans, event.target.value]);
+                  }
+                }}
+                checked={ans.includes(String(i))}
                 sx={{margin: 0, padding: 0, border: 0}}
-                />                
+                />
               ))
               }
             </ImageList>
-          </RadioGroup>
 
           <p style={{color: "red"}}> {passFlag === 0 && "もう一度お試しください"} </p>
           {/*{id} | {quiz} | {quizJa} | {message}*/}
           </> }
 
-          {/*{passFlag === 1 && <div>わんわんCAPTCHAに正解しました。うれしーーーー<br />再挑戦するには再試行ボタンを押してください</div>}*/}
           {passFlag === 1 && <div>わんわんCAPTCHAに正解しました。うれしーーーー<br />再挑戦するには再試行ボタンを押してください</div>}
 
         </DialogContent>
